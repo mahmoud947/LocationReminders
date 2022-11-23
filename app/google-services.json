@@ -7,7 +7,7 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:196537838138:android:0e9948b8d4522c159d6303",
+        "mobilesdk_app_id": "1:196537838138:android:68bbe6f358eefd3e9d6303",
         "android_client_info": {
           "package_name": "com.udacity.project4"
         }
@@ -20,7 +20,7 @@
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyA0AS59WUn6gOm20YPwSb3akj-H45A7ImQ"
+          "current_key": "AIzaSyBHihwnvsKuKZ7QDuUo5ux73WxKAWjZ38o"
         }
       ],
       "services": {
