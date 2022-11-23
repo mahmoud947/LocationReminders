@@ -1,12 +1,15 @@
 package com.udacity.project4.locationreminders.savereminder.selectreminderlocation
 
 
+import android.content.res.Resources
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import androidx.databinding.DataBindingUtil
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.databinding.FragmentSelectLocationBinding
@@ -14,6 +17,7 @@ import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
 
+private const val TAG = "SelectLocationFragment"
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
     //Use Koin to get the view model of the SaveReminder
@@ -83,7 +87,21 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
+        setMapStyle(map)
 
+    }
+
+
+    private fun setMapStyle(map: GoogleMap) {
+        try {
+            val isSuccess =
+                map.setMapStyle(MapStyleOptions.loadRawResourceStyle(requireContext(), R.raw.map_style))
+            if (!isSuccess) {
+                Log.d(TAG, "setMapStyle: failed")
+            }
+        }catch (e:Resources.NotFoundException){
+            Log.d(TAG, "Can't find style. Error: $e")
+        }
     }
 
 
