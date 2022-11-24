@@ -9,15 +9,20 @@ import androidx.databinding.DataBindingUtil
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.MarkerOptions
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.databinding.FragmentSelectLocationBinding
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
+import java.util.*
 
 private const val TAG = "SelectLocationFragment"
+
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
     //Use Koin to get the view model of the SaveReminder
@@ -40,6 +45,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(true)
+
 
 //        TODO: add the map setup implementation
 //        TODO: zoom to the user location after taking his permission
@@ -85,9 +91,13 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         else -> super.onOptionsItemSelected(item)
     }
 
+    // map setup
+
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
         setMapStyle(map)
+        setOnPioClick(map)
+        setOnMapLongClick(map)
 
     }
 
@@ -95,12 +105,45 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private fun setMapStyle(map: GoogleMap) {
         try {
             val isSuccess =
-                map.setMapStyle(MapStyleOptions.loadRawResourceStyle(requireContext(), R.raw.map_style))
+                map.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(
+                        requireContext(),
+                        R.raw.map_style
+                    )
+                )
             if (!isSuccess) {
                 Log.d(TAG, "setMapStyle: failed")
             }
-        }catch (e:Resources.NotFoundException){
+        } catch (e: Resources.NotFoundException) {
             Log.d(TAG, "Can't find style. Error: $e")
+        }
+    }
+
+    private fun setOnMapLongClick(map: GoogleMap) {
+        map.setOnMapLongClickListener {
+            val snippet = String.format(
+                Locale.getDefault(),
+                "Lat:%1$.8f, Long: %2$.8f",
+                it.latitude,
+                it.longitude
+            )
+            map.clear()
+            map.addMarker(
+                MarkerOptions()
+                    .position(it)
+                    .snippet(snippet)
+                    .title(getString(R.string.dropped_pin))
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE))
+            ).showInfoWindow()
+        }
+    }
+
+    private fun setOnPioClick(map: GoogleMap) {
+        map.clear()
+        map.setOnPoiClickListener {
+            val poiMarker: Marker? =
+                map.addMarker(MarkerOptions().position(it.latLng).title(it.name))
+            poiMarker?.showInfoWindow()
         }
     }
 
