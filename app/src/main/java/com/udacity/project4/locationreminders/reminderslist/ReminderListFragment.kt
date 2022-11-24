@@ -1,21 +1,30 @@
 package com.udacity.project4.locationreminders.reminderslist
 
+import android.Manifest
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.view.*
+import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import com.firebase.ui.auth.AuthUI
+import com.google.android.material.snackbar.Snackbar
+import com.udacity.project4.BuildConfig
 import com.udacity.project4.R
 import com.udacity.project4.authentication.AuthenticationActivity
 import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentRemindersBinding
+import com.udacity.project4.locationreminders.savereminder.selectreminderlocation.REQUEST_LOCATION_PERMISSION
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import com.udacity.project4.utils.setTitle
 import com.udacity.project4.utils.setup
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import pub.devrel.easypermissions.AppSettingsDialog
+import pub.devrel.easypermissions.EasyPermissions
 
-class ReminderListFragment : BaseFragment() {
+class ReminderListFragment : BaseFragment(), EasyPermissions.PermissionCallbacks {
     //use Koin to retrieve the ViewModel instance
     override val _viewModel: RemindersListViewModel by viewModel()
     private lateinit var binding: FragmentRemindersBinding
@@ -48,6 +57,11 @@ class ReminderListFragment : BaseFragment() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        requestLocationPermissions()
+    }
+
     override fun onResume() {
         super.onResume()
         //load the reminders list on the ui
@@ -76,7 +90,7 @@ class ReminderListFragment : BaseFragment() {
             R.id.logout -> {
 //                TODO: add the logout implementation
                 AuthUI.getInstance().signOut(requireContext()).addOnCompleteListener {
-                    val intent = Intent(requireActivity(),AuthenticationActivity::class.java)
+                    val intent = Intent(requireActivity(), AuthenticationActivity::class.java)
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     startActivity(intent)
                     requireActivity().finish()
@@ -91,6 +105,57 @@ class ReminderListFragment : BaseFragment() {
         super.onCreateOptionsMenu(menu, inflater)
 //        display logout as menu item
         inflater.inflate(R.menu.main_menu, menu)
+    }
+
+    private fun requestLocationPermissions() {
+        val perm = arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+        if (EasyPermissions.hasPermissions(requireContext(), *perm)) {
+            // Already have permissions
+
+        } else {
+            EasyPermissions.requestPermissions(
+                this,
+                "this app required location permission to work",
+                REQUEST_LOCATION_PERMISSION,
+                *perm
+            )
+
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this)
+    }
+
+    override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
+        if (requestCode==REQUEST_LOCATION_PERMISSION){
+            Toast.makeText(requireContext(),"Permissions granted successfully",Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
+        if (EasyPermissions.somePermissionPermanentlyDenied(this, perms)) {
+            AppSettingsDialog.Builder(this).build().show()
+            Snackbar.make(
+                binding.refreshLayout,
+                R.string.permission_denied_explanation,
+                Snackbar.LENGTH_INDEFINITE
+            ).setAction(R.string.settings){
+               startActivity(Intent().apply {
+                    action= Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                    data= Uri.fromParts("package", BuildConfig.APPLICATION_ID,null)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                })
+            }.show()
+        }
     }
 
 }

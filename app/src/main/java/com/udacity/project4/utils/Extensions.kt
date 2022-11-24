@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -66,9 +65,18 @@ fun View.fadeOut() {
 }
 
 fun Context.isAccessFineLocationPermissionGranted(): Boolean {
-    return ContextCompat.checkSelfPermission(this,
+    val fineLocation = ContextCompat.checkSelfPermission(
+        this,
         Manifest.permission.ACCESS_FINE_LOCATION
     ) == PackageManager.PERMISSION_GRANTED
+    val coarseLocation = ContextCompat.checkSelfPermission(
+        this,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+    return fineLocation && coarseLocation
 }
 
+fun Context.isRunningQorLatter(): Boolean {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+}
 
