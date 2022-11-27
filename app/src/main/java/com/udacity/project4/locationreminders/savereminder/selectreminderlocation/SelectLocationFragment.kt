@@ -3,6 +3,8 @@ package com.udacity.project4.locationreminders.savereminder.selectreminderlocati
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Intent
 import android.content.IntentSender
 import android.content.res.Resources
 import android.os.Bundle
@@ -22,6 +24,9 @@ import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentSelectLocationBinding
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
+import com.udacity.project4.utils.Constants
+import com.udacity.project4.utils.Constants.REQUEST_TURN_DEVICE_LOCATION_ON
+import com.udacity.project4.utils.REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
 import com.udacity.project4.utils.isAccessFineLocationPermissionGranted
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
@@ -43,13 +48,14 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback,
     private var selectedLocation = LatLng(30.044437, 31.235701) // cairo
     private var selectedLocationDescription = ""
 
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         binding =
             DataBindingUtil.inflate(inflater, R.layout.fragment_select_location, container, false)
 
-        setUpMap()
+
 
         binding.viewModel = _viewModel
         binding.lifecycleOwner = this
@@ -57,9 +63,10 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback,
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(true)
 
+
+        setUpMap()
         fusedLocationProviderClient =
             LocationServices.getFusedLocationProviderClient(requireContext())
-
 
 //        TODO: add the map setup implementation
 //        TODO: zoom to the user location after taking his permission
@@ -79,7 +86,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback,
         val mapFragment =
             childFragmentManager.findFragmentById(binding.mapFragment.id) as SupportMapFragment
         mapFragment.getMapAsync(this)
-
     }
 
 
@@ -134,9 +140,25 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback,
         setMapStyle(map)
         setOnPioClick(map)
         setOnMapLongClick(map)
-        enableCurrentLocation(map)
+        enableCurrentLocation()
     }
 
+    private fun addMarker(map: GoogleMap, snippet: String?, latLng: LatLng) {
+        map.clear()
+        map.addMarker(
+            MarkerOptions()
+                .position(latLng)
+                .snippet(snippet)
+                .title(getString(R.string.dropped_pin))
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE))
+        ).showInfoWindow()
+        map.addCircle(
+            CircleOptions().center(latLng).radius(Constants.GEOFENCE_RADIUS_IN_METERS.toDouble())
+                .fillColor(R.color.colorAccent)
+                .strokeColor(R.color.colorAccent)
+        )
+
+    }
 
     private fun setMapStyle(map: GoogleMap) {
         try {
@@ -163,36 +185,27 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback,
                 it.latitude,
                 it.longitude
             )
-            map.clear()
-            map.addMarker(
-                MarkerOptions()
-                    .position(it)
-                    .snippet(snippet)
-                    .title(getString(R.string.dropped_pin))
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE))
-            ).showInfoWindow()
+
+            addMarker(map, snippet, it)
             selectedLocation = it
             selectedLocationDescription = snippet
         }
-
     }
 
+
     private fun setOnPioClick(map: GoogleMap) {
-        map.clear()
         map.setOnPoiClickListener {
             map.clear()
             val poiMarker: Marker? =
                 map.addMarker(MarkerOptions().position(it.latLng).title(it.name))
             poiMarker?.showInfoWindow()
-            selectedLocation = it.latLng
-            selectedLocationDescription = poiMarker?.title.toString()
         }
     }
 
 
-    private fun enableCurrentLocation(map: GoogleMap) {
+    private fun enableCurrentLocation() {
         if (requireContext().isAccessFineLocationPermissionGranted()) {
-            getCurrentLocation(map)
+            requestOpenDeviceLocationSettings()
         } else {
             onRequestPermissions()
         }
@@ -201,70 +214,27 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback,
 
     @SuppressLint("MissingPermission")
     private fun getCurrentLocation(map: GoogleMap) {
-        val locationResult = fusedLocationProviderClient.lastLocation
-        locationResult.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                fusedLocationProviderClient =
-                    LocationServices.getFusedLocationProviderClient(requireContext())
-                map.isMyLocationEnabled = true
-                val location = task.result
-
-                if (location != null) {
-                    val currentLocation = LatLng(location.latitude, location.longitude)
-                    selectedLocation = currentLocation
-                    val snippet = String.format(
-                        Locale.getDefault(),
-                        "Lat:%1$.8f, Long: %2$.8f",
-                        location.latitude,
-                        location.longitude
-                    )
-                    selectedLocationDescription=snippet
-                    map.clear()
-                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 18f))
-                    map.addMarker(
-                        MarkerOptions()
-                            .position(currentLocation)
-                            .snippet(snippet)
-                            .title(getString(R.string.dropped_pin))
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE))
-                    ).showInfoWindow()
-                } else {
-                    map.clear()
-                    Log.d(TAG, "Current location is null. Using defaults.")
-                    Log.e(TAG, "Exception: %s", task.exception)
-                    map.moveCamera(
-                        CameraUpdateFactory
-                            .newLatLngZoom(selectedLocation, 18f)
-                    )
-                    map.isMyLocationEnabled = false
-
-                    val snippet = String.format(
-                        Locale.getDefault(),
-                        "Lat:%1$.8f, Long: %2$.8f",
-                        selectedLocation.latitude,
-                        selectedLocation.longitude
-                    )
-                    selectedLocationDescription=snippet
-                    map.clear()
-                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(selectedLocation, 18f))
-                    map.addMarker(
-                        MarkerOptions()
-                            .position(selectedLocation)
-                            .snippet(snippet)
-                            .title(getString(R.string.dropped_pin))
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE))
-                    ).showInfoWindow()
-                }
+        _viewModel.getCurrantLocation(fusedLocationProviderClient)
+        _viewModel.location.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+            if (it == null) {
+                onRequestPermissions()
             } else {
-                Log.d(TAG, "Current location is null. Using defaults.")
-                Log.e(TAG, "Exception: %s", task.exception)
-                map.moveCamera(
-                    CameraUpdateFactory
-                        .newLatLngZoom(selectedLocation, 18f)
+                map.isMyLocationEnabled = true
+                val currentLocation = LatLng(it.latitude, it.longitude)
+                selectedLocation = currentLocation
+                val snippet = String.format(
+                    Locale.getDefault(),
+                    "Lat:%1$.8f, Long: %2$.8f",
+                    it.latitude,
+                    it.longitude
                 )
-                map.isMyLocationEnabled = false
+                selectedLocationDescription = snippet
+
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 18f))
+                addMarker(map, snippet, currentLocation)
             }
-        }
+        })
+
     }
 
 
@@ -274,35 +244,29 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback,
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
         if (EasyPermissions.hasPermissions(requireContext(), *perm)) {
-
-        } else {
-            EasyPermissions.requestPermissions(this, "", REQUEST_LOCATION_PERMISSION, *perm)
-
-        }
-    }
-
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this)
-    }
-
-    override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
-        if (requestCode == REQUEST_LOCATION_PERMISSION && perms.isNotEmpty()) {
             requestOpenDeviceLocationSettings()
+        } else {
+            EasyPermissions.requestPermissions(
+                this,
+                "this app required location permission to work",
+                REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE,
+                *perm
+            )
         }
     }
 
-    override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
-        if (EasyPermissions.somePermissionPermanentlyDenied(this, perms)) {
-            AppSettingsDialog.Builder(this).build().show()
+
+    @SuppressLint("MissingPermission")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_TURN_DEVICE_LOCATION_ON) {
+            // We don't rely on the result code, but just check the location setting again
+            Toast.makeText(requireContext(), "it work", Toast.LENGTH_SHORT).show()
+            if (resultCode == Activity.RESULT_OK) {
+                getCurrentLocation(map)
+            }
         }
     }
-
 
     private fun requestOpenDeviceLocationSettings(resolve: Boolean = true) {
         val locationRequest =
@@ -310,15 +274,17 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback,
         val builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
         val settingsClient = LocationServices.getSettingsClient(requireContext())
         val locationSettingsResponseTask = settingsClient.checkLocationSettings(builder.build())
-
-
-
         locationSettingsResponseTask.addOnFailureListener { exception ->
             if (exception is ResolvableApiException && resolve) {
                 try {
-                    exception.startResolutionForResult(
-                        requireActivity(),
-                        REQUEST_TURN_DEVICE_LOCATION_ON
+                    startIntentSenderForResult(
+                        exception.resolution.intentSender,
+                        REQUEST_TURN_DEVICE_LOCATION_ON,
+                        null,
+                        0,
+                        0,
+                        0,
+                        null
                     )
                 } catch (sendEx: IntentSender.SendIntentException) {
                     Log.d(TAG, "checkDeviceLocationSettingsAndStartGeofence: ${sendEx.message}")
@@ -331,21 +297,35 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback,
                 ).show()
             }
         }
-
-
-        locationSettingsResponseTask.addOnCompleteListener {
-            if (it.isSuccessful) {
-                getCurrentLocation(map)
-                Toast.makeText(requireContext(), "isSucceful", Toast.LENGTH_LONG).show()
-            }
-        }
         locationSettingsResponseTask.addOnSuccessListener {
-            Toast.makeText(requireContext(), "isSucceful", Toast.LENGTH_LONG).show()
+            getCurrentLocation(map)
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this)
+    }
+
+    override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
+        if (requestCode == REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE) {
+            requestOpenDeviceLocationSettings()
+        }
+    }
+
+    override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
+        if (requestCode == REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE) {
+            AppSettingsDialog.Builder(this).build().show()
+        }
+        if (EasyPermissions.somePermissionPermanentlyDenied(this, perms)) {
+            AppSettingsDialog.Builder(this).build().show()
         }
     }
 }
 
 
-const val REQUEST_LOCATION_PERMISSION = 1
-const val REQUEST_TURN_DEVICE_LOCATION_ON = 29
 

@@ -42,4 +42,7 @@
     <string name="error_adding_geofence">Error Happened, Can\'t Add Geofence</string>
     <string name="successfully_sign_in">Successfully signed in</string>
     <string name="sign_in_unsuccessful">Sign in unsuccessful</string>
+    <string name="unknown_geofence_error">
+        Unknown error: the Geofence service is not available now
+    </string>
 </resources>
