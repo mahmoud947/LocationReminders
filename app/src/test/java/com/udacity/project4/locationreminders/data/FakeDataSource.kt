@@ -19,7 +19,7 @@ class FakeDataSource (private var reminders:MutableList<ReminderDTO>? = mutableL
     }
 
     override suspend fun getReminder(id: String): Result<ReminderDTO> {
-      val reminder= reminders?.find {
+      val reminder= reminders?.firstOrNull {
           it.id==id }
         reminder?.let {
             return Result.Success(it)
