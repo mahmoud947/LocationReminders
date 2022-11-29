@@ -93,8 +93,11 @@ class SaveReminderFragment : BaseFragment(), EasyPermissions.PermissionCallbacks
             latitude = latitude,
             longitude = longitude
         )
-        addGeofenceForClue(reminder = reminder)
-        _viewModel.validateAndSaveReminder(reminder)
+        if (_viewModel.validateEnteredData(reminder)){
+            _viewModel.validateAndSaveReminder(reminder)
+            addGeofenceForClue(reminder = reminder)
+        }
+
     }
 
     @SuppressLint("MissingPermission")
