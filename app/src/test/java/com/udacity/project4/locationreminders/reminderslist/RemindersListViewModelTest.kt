@@ -54,6 +54,21 @@ class RemindersListViewModelTest {
     }
 
     @Test
+    fun check_loading(){
+
+        //When
+        mainCoroutineRule.pauseDispatcher()
+        viewModel.loadReminders()
+
+        //Then show loading
+        assertThat(viewModel.showLoading.getOrAwaitValue(), `is`(true))
+        mainCoroutineRule.resumeDispatcher()
+        assertThat(viewModel.showLoading.getOrAwaitValue(), `is`(false))
+    }
+
+
+
+    @Test
     fun loadReminders_dataSourceWithData_both_showNoDataIsFalse_and_remindersListIsNotEmptyOrNull() {
 
         //GIVEN datasource with no empty reminders
@@ -114,7 +129,7 @@ class RemindersListViewModelTest {
 
 
     @Test
-    fun loadReminders_dataSourceEmptyData_both_showNoDataIsFalse_and_remindersListIsNotEmptyOrNull() =
+    fun loadReminders_dataSourceEmptyData_both_showNoDataIsTrue_and_remindersListIsNotEmptyOrNull() =
         mainCoroutineRule.runBlockingTest {
 
             //GIVEN datasource with no empty reminders

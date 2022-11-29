@@ -47,6 +47,29 @@ class SaveReminderViewModelTest {
 
 
     @Test
+    fun check_loading(){
+        //GIVEN add new valid reminder
+        val reminder = ReminderDataItem(
+            title = "Title",
+            description = "description",
+            location = "location",
+            longitude = 222.22,
+            latitude = 222.22
+        )
+        mainCoroutineRule.pauseDispatcher()
+
+
+        // WHEN saveReminder
+        viewModel.validateAndSaveReminder(reminder)
+
+        //THEN  showToast(Reminder Saved !)
+        //      showLoading is  true in first time and should be false after successfully saved
+        assertThat(viewModel.showLoading.getOrAwaitValue(), `is`(true))
+        mainCoroutineRule.resumeDispatcher()
+        assertThat(viewModel.showLoading.getOrAwaitValue(), `is`(false))
+    }
+
+    @Test
     fun validateAndSaveReminder_validData_showSavedToast() {
         //GIVEN add new valid reminder
         val reminder = ReminderDataItem(
