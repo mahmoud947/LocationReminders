@@ -141,7 +141,10 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback,
         setOnPioClick(map)
         setOnMapLongClick(map)
         enableCurrentLocation()
+        setOnMyLocationButtonClick(map)
     }
+
+
 
     private fun addMarker(map: GoogleMap, snippet: String?, latLng: LatLng) {
         map.clear()
@@ -199,6 +202,13 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback,
             val poiMarker: Marker? =
                 map.addMarker(MarkerOptions().position(it.latLng).title(it.name))
             poiMarker?.showInfoWindow()
+        }
+    }
+
+    private fun setOnMyLocationButtonClick(googleMap: GoogleMap){
+        googleMap.setOnMyLocationButtonClickListener {
+            enableCurrentLocation()
+            true
         }
     }
 
@@ -260,11 +270,12 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback,
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_TURN_DEVICE_LOCATION_ON) {
-            // We don't rely on the result code, but just check the location setting again
-            Toast.makeText(requireContext(), "it work", Toast.LENGTH_SHORT).show()
             if (resultCode == Activity.RESULT_OK) {
                 getCurrentLocation(map)
+            }else{
+                map.isMyLocationEnabled =true
             }
+
         }
     }
 
