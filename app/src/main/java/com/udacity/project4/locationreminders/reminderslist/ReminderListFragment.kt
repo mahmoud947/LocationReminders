@@ -20,7 +20,7 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
 
-class ReminderListFragment : BaseFragment(), EasyPermissions.PermissionCallbacks {
+class ReminderListFragment : BaseFragment() {
     //use Koin to retrieve the ViewModel instance
     override val _viewModel: RemindersListViewModel by viewModel()
     private lateinit var binding: FragmentRemindersBinding
@@ -53,10 +53,6 @@ class ReminderListFragment : BaseFragment(), EasyPermissions.PermissionCallbacks
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        requestLocationPermissions()
-    }
 
     override fun onResume() {
         super.onResume()
@@ -99,50 +95,11 @@ class ReminderListFragment : BaseFragment(), EasyPermissions.PermissionCallbacks
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
-//        display logout as menu item
+        //display logout as menu item
         inflater.inflate(R.menu.main_menu, menu)
     }
 
-    private fun requestLocationPermissions() {
-        val perm = arrayOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-        if (EasyPermissions.hasPermissions(requireContext(), *perm)) {
-            // Already have permissions
 
-        } else {
-            EasyPermissions.requestPermissions(
-                this,
-                "this app required location permission to work",
-                REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE,
-                *perm
-            )
-
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this)
-    }
-
-    override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
-        if (requestCode==REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE){
-            Toast.makeText(requireContext(),"Permissions granted successfully",Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
-        if (requestCode== REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE){
-            AppSettingsDialog.Builder(this).build().show()
-        }
-        if (EasyPermissions.somePermissionPermanentlyDenied(this, perms)) {
-            AppSettingsDialog.Builder(this).build().show()
 
 //            Snackbar.make(
 //                binding.refreshLayout,
@@ -155,7 +112,5 @@ class ReminderListFragment : BaseFragment(), EasyPermissions.PermissionCallbacks
 //                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
 //                })
 //            }.show()
-        }
-    }
 
 }
